@@ -822,14 +822,15 @@ main(int argc, char *argv[])
       c = addrlen + 1 + (grplen * x) / octspergrp;
       if (hextype == HEX_NORMAL || hextype == HEX_LITTLEENDIAN)
 	{
-	  l[c]   = hexx[(e >> 4) & 0xf];
-	  l[++c] = hexx[e & 0xf];
+	  int i;
+	  for (i = 1; i >= 0; i--)
+	    l[c++] = hexx[(e >> 4*i) & 0xf];
 	}
       else /* hextype == HEX_BITS */
 	{
 	  int i;
 	  for (i = 7; i >= 0; i--)
-	    l[c++] = (e & (1 << i)) ? '1' : '0';
+	    l[c++] = hexx[(e >> i) & 1];
 	}
       if (e)
 	nonzero++;
