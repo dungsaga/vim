@@ -820,18 +820,12 @@ main(int argc, char *argv[])
 	}
       x = hextype == HEX_LITTLEENDIAN ? p ^ (octspergrp-1) : p;
       c = addrlen + 1 + (grplen * x) / octspergrp;
-      if (hextype == HEX_NORMAL || hextype == HEX_LITTLEENDIAN)
-	{
-	  int i;
-	  for (i = 1; i >= 0; i--)
-	    l[c++] = hexx[(e >> 4*i) & 0xf];
-	}
-      else /* hextype == HEX_BITS */
-	{
-	  int i;
-	  for (i = 7; i >= 0; i--)
-	    l[c++] = hexx[(e >> i) & 1];
-	}
+      int bits_per_digit = hextype == HEX_BITS ? 1 : 4; // 4 in mode HEX_NORMAL, HEX_LITTLEENDIAN
+      int bit_mask = (1 << bits_per_digit) - 1;
+      int digits_per_octet = 8 / bits_per_digit;
+      int i;
+      for (i = digits_per_octet-1; i >= 0; i--)
+        l[c++] = hexx[(e >> i*bits_per_digit) & bit_mask];
       if (e)
 	nonzero++;
       if (ebcdic)
