@@ -292,10 +292,10 @@ fclose_or_die(FILE *fpi, FILE *fpo)
 }
 
   static char
-octet_to_digits(int octet, int bits_per_digit, char *l)
+octet_to_digits(int octet, int digits_per_octet, char *l)
 {
+  int bits_per_digit = 8 / digits_per_octet;
   int bit_mask = (1 << bits_per_digit) - 1;
-  int digits_per_octet = 8 / bits_per_digit;
   int j = 0;
   int i;
   for (i = digits_per_octet-1; i >= 0; i--)
@@ -813,8 +813,7 @@ main(int argc, char *argv[])
 
   /* hextype: HEX_NORMAL or HEX_BITS or HEX_LITTLEENDIAN */
 
-  int bits_per_digit = hextype == HEX_BITS ? 1 : 4; /* 4 in mode HEX_NORMAL or HEX_LITTLEENDIAN */
-  int digits_per_octet = 8 / bits_per_digit;
+  int digits_per_octet = hextype == HEX_BITS ? 8 : 2; /* 2 in mode HEX_NORMAL or HEX_LITTLEENDIAN */
   int grplen = digits_per_octet * octspergrp + 1;  /* chars per octet group */
 
   e = 0;
@@ -830,7 +829,7 @@ main(int argc, char *argv[])
 	}
       x = hextype == HEX_LITTLEENDIAN ? p ^ (octspergrp-1) : p;
       c = addrlen + 1 + (grplen * x) / octspergrp;
-      octet_to_digits(e, bits_per_digit, &l[c]);
+      octet_to_digits(e, digits_per_octet, &l[c]);
       if (e)
 	nonzero++;
       if (ebcdic)
