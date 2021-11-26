@@ -291,6 +291,17 @@ fclose_or_die(FILE *fpi, FILE *fpo)
     perror_exit(2);
 }
 
+  static char
+octet_to_digits(int octet, int bits_per_digit, char *l, int c)
+{
+  int bit_mask = (1 << bits_per_digit) - 1;
+  int digits_per_octet = 8 / bits_per_digit;
+  int i;
+  for (i = digits_per_octet-1; i >= 0; i--)
+    l[c++] = hexx[(octet >> i*bits_per_digit) & bit_mask]; /* convert `bits_per_digit` bits into a digit */
+
+}
+
 /*
  * If "c" is a hex digit, return the value.
  * Otherwise return -1.
@@ -802,7 +813,6 @@ main(int argc, char *argv[])
   /* hextype: HEX_NORMAL or HEX_BITS or HEX_LITTLEENDIAN */
 
   int bits_per_digit = hextype == HEX_BITS ? 1 : 4; /* 4 in mode HEX_NORMAL or HEX_LITTLEENDIAN */
-  int bit_mask = (1 << bits_per_digit) - 1;
   int digits_per_octet = 8 / bits_per_digit;
   int grplen = digits_per_octet * octspergrp + 1;  /* chars per octet group */
 
@@ -819,9 +829,7 @@ main(int argc, char *argv[])
 	}
       x = hextype == HEX_LITTLEENDIAN ? p ^ (octspergrp-1) : p;
       c = addrlen + 1 + (grplen * x) / octspergrp;
-      int i;
-      for (i = digits_per_octet-1; i >= 0; i--)
-        l[c++] = hexx[(e >> i*bits_per_digit) & bit_mask]; /* convert `bits_per_digit` bits into a digit */
+      octet_to_digits(e, bits_per_digit, l, c);
       if (e)
 	nonzero++;
       if (ebcdic)
