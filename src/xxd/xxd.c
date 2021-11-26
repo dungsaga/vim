@@ -452,6 +452,13 @@ xxdline(FILE *fp, char *l, int nz)
     }
 }
 
+static char *bit_rep[16] = {
+    [ 0] = "0000", [ 1] = "0001", [ 2] = "0010", [ 3] = "0011",
+    [ 4] = "0100", [ 5] = "0101", [ 6] = "0110", [ 7] = "0111",
+    [ 8] = "1000", [ 9] = "1001", [10] = "1010", [11] = "1011",
+    [12] = "1100", [13] = "1101", [14] = "1110", [15] = "1111",
+};
+
 /* This is an EBCDIC to ASCII conversion table */
 /* from a proposed BTL standard April 16, 1979 */
 static unsigned char etoa64[] =
@@ -822,15 +829,13 @@ main(int argc, char *argv[])
       c = addrlen + 1 + (grplen * x) / octspergrp;
       if (hextype == HEX_NORMAL || hextype == HEX_LITTLEENDIAN)
 	{
-	  l[c]   = hexx[(e >> 4) & 0xf];
-	  l[++c] = hexx[e & 0xf];
+	  x = sprintf(&l[c], "%c%c", hexx[e >> 4], hexx[e & 0xf]);
 	}
       else /* hextype == HEX_BITS */
 	{
-	  int i;
-	  for (i = 7; i >= 0; i--)
-	    l[c++] = (e & (1 << i)) ? '1' : '0';
+	  x = sprintf(&l[c], "%s%s", bit_rep[e >> 4], bit_rep[e & 0xf]);
 	}
+      l[c + x] = ' ';
       if (e)
 	nonzero++;
       if (ebcdic)
