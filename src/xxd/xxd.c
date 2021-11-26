@@ -296,10 +296,9 @@ octet_to_digits(int octet, int digits_per_octet, char *l)
 {
   int bits_per_digit = 8 / digits_per_octet;
   int bit_mask = (1 << bits_per_digit) - 1;
-  int j = 0;
   int i;
   for (i = digits_per_octet-1; i >= 0; i--)
-    l[j++] = hexx[(octet >> i*bits_per_digit) & bit_mask]; /* convert `bits_per_digit` bits into a digit */
+    l++[0] = hexx[(octet >> i*bits_per_digit) & bit_mask]; /* convert `bits_per_digit` bits into a digit */
 
 }
 
