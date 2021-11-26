@@ -292,13 +292,14 @@ fclose_or_die(FILE *fpi, FILE *fpo)
 }
 
   static char
-octet_to_digits(int octet, int bits_per_digit, char *l, int c)
+octet_to_digits(int octet, int bits_per_digit, char *l)
 {
   int bit_mask = (1 << bits_per_digit) - 1;
   int digits_per_octet = 8 / bits_per_digit;
+  int j = 0;
   int i;
   for (i = digits_per_octet-1; i >= 0; i--)
-    l[c++] = hexx[(octet >> i*bits_per_digit) & bit_mask]; /* convert `bits_per_digit` bits into a digit */
+    l[j++] = hexx[(octet >> i*bits_per_digit) & bit_mask]; /* convert `bits_per_digit` bits into a digit */
 
 }
 
@@ -829,7 +830,7 @@ main(int argc, char *argv[])
 	}
       x = hextype == HEX_LITTLEENDIAN ? p ^ (octspergrp-1) : p;
       c = addrlen + 1 + (grplen * x) / octspergrp;
-      octet_to_digits(e, bits_per_digit, l, c);
+      octet_to_digits(e, bits_per_digit, &l[c]);
       if (e)
 	nonzero++;
       if (ebcdic)
