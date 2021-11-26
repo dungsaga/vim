@@ -491,7 +491,6 @@ main(int argc, char *argv[])
   int capitalize = 0, decimal_offset = 0;
   int ebcdic = 0;
   int octspergrp = -1;	/* number of octets grouped in output */
-  int grplen;		/* total chars per octet group */
   long length = -1, n = 0, seekoff = 0;
   unsigned long displayoff = 0;
   static char l[LLEN+1];  /* static because it may be too big for stack */
@@ -802,10 +801,10 @@ main(int argc, char *argv[])
 
   /* hextype: HEX_NORMAL or HEX_BITS or HEX_LITTLEENDIAN */
 
-  if (hextype != HEX_BITS)
-    grplen = octspergrp + octspergrp + 1;	/* chars per octet group */
-  else	/* hextype == HEX_BITS */
-    grplen = 8 * octspergrp + 1;
+  int bits_per_digit = hextype == HEX_BITS ? 1 : 4; /* 4 in mode HEX_NORMAL or HEX_LITTLEENDIAN */
+  int bit_mask = (1 << bits_per_digit) - 1;
+  int digits_per_octet = 8 / bits_per_digit;
+  int grplen = digits_per_octet * octspergrp + 1;  /* chars per octet group */
 
   e = 0;
   while ((length < 0 || n < length) && (e = getc_or_die(fp)) != EOF)
@@ -820,12 +819,9 @@ main(int argc, char *argv[])
 	}
       x = hextype == HEX_LITTLEENDIAN ? p ^ (octspergrp-1) : p;
       c = addrlen + 1 + (grplen * x) / octspergrp;
-      int bits_per_digit = hextype == HEX_BITS ? 1 : 4; // 4 in mode HEX_NORMAL, HEX_LITTLEENDIAN
-      int bit_mask = (1 << bits_per_digit) - 1;
-      int digits_per_octet = 8 / bits_per_digit;
       int i;
       for (i = digits_per_octet-1; i >= 0; i--)
-        l[c++] = hexx[(e >> i*bits_per_digit) & bit_mask];
+        l[c++] = hexx[(e >> i*bits_per_digit) & bit_mask]; /* convert `bits_per_digit` bits into a digit */
       if (e)
 	nonzero++;
       if (ebcdic)
