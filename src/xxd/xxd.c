@@ -452,7 +452,9 @@ xxdline(FILE *fp, char *l, int nz)
     }
 }
 
-static char *bit_rep[16] = {
+#define NIBBLE_MASK 0xf /* bitmask for a half octet */
+#define NIBBLE_SIZE 4 /* size in binary digits of a half octet */
+static char *nibbles[16] = { /* binary digits of values in a nibble (0 to 15) */
     [ 0] = "0000", [ 1] = "0001", [ 2] = "0010", [ 3] = "0011",
     [ 4] = "0100", [ 5] = "0101", [ 6] = "0110", [ 7] = "0111",
     [ 8] = "1000", [ 9] = "1001", [10] = "1010", [11] = "1011",
@@ -829,13 +831,14 @@ main(int argc, char *argv[])
       c = addrlen + 1 + (grplen * x) / octspergrp;
       if (hextype == HEX_NORMAL || hextype == HEX_LITTLEENDIAN)
 	{
-	  x = sprintf(&l[c], "%c%c", hexx[e >> 4], hexx[e & 0xf]);
+	  x = sprintf(&l[c], "%c%c", hexx[e >> NIBBLE_SIZE], hexx[e & NIBBLE_MASK]);
+	  l[c + x] = ' ';
 	}
       else /* hextype == HEX_BITS */
 	{
-	  x = sprintf(&l[c], "%s%s", bit_rep[e >> 4], bit_rep[e & 0xf]);
+	  memcpy(&l[c], nibbles[e >> NIBBLE_SIZE], NIBBLE_SIZE);
+	  memcpy(&l[c+NIBBLE_SIZE], nibbles[e & NIBBLE_MASK], NIBBLE_SIZE);
 	}
-      l[c + x] = ' ';
       if (e)
 	nonzero++;
       if (ebcdic)
