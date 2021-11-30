@@ -512,6 +512,7 @@ main(int argc, char *argv[])
 
   while (argc >= 2)
     {
+      // if argument argv[1] starts with "--", then skip the first "-" 
       pp = argv[1] + (!STRNCMP(argv[1], "--", 2) && argv[1][2]);
 	   if (!STRNCMP(pp, "-a", 2)) autoskip = 1 - autoskip;
       else if (!STRNCMP(pp, "-b", 2)) hextype = HEX_BITS;
@@ -587,28 +588,23 @@ main(int argc, char *argv[])
 	  negseek = 0;
 	  if (pp[2] && STRNCMP("kip", pp+2, 3) && STRNCMP("eek", pp+2, 3))
 	    {
-#ifdef TRY_SEEK
-	      if (pp[2] == '+')
-		relseek++;
-	      if (pp[2+relseek] == '-')
-		negseek++;
-#endif
-	      seekoff = strtol(pp + 2+relseek+negseek, (char **)NULL, 0);
+	    	pp += 2;
 	    }
 	  else
 	    {
-	      if (!argv[2])
+	    	pp = argv[2];
+	      if (!pp)
 		exit_with_usage();
-#ifdef TRY_SEEK
-	      if (argv[2][0] == '+')
-		relseek++;
-	      if (argv[2][relseek] == '-')
-		negseek++;
-#endif
-	      seekoff = strtol(argv[2] + relseek+negseek, (char **)NULL, 0);
 	      argv++;
 	      argc--;
 	    }
+#ifdef TRY_SEEK
+	      if (pp[0] == '+')
+		relseek++;
+	      if (pp[relseek] == '-')
+		negseek++;
+#endif
+	      seekoff = strtol(pp + relseek+negseek, (char **)NULL, 0);
 	}
       else if (!STRNCMP(pp, "-l", 2))
 	{
@@ -715,11 +711,8 @@ main(int argc, char *argv[])
   if (seekoff || negseek || !relseek)
     {
 #ifdef TRY_SEEK
-      if (relseek)
-	e = fseek(fp, negseek ? -seekoff : seekoff, SEEK_CUR);
-      else
-	e = fseek(fp, negseek ? -seekoff : seekoff,
-						negseek ? SEEK_END : SEEK_SET);
+      c = relseek ? SEEK_CUR : (negseek ? SEEK_END : SEEK_SET);
+      e = fseek(fp, negseek ? -seekoff : seekoff, c);
       if (e < 0 && negseek)
 	error_exit(4, "sorry cannot seek.");
       if (e >= 0)
