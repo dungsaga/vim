@@ -604,7 +604,7 @@ main(int argc, char *argv[])
 	      if (pp[relseek] == '-')
 		negseek++;
 #endif
-	      seekoff = strtol(pp + relseek+negseek, (char **)NULL, 0);
+	      seekoff = strtol(pp + relseek, (char **)NULL, 0);
 	}
       else if (!STRNCMP(pp, "-l", 2))
 	{
@@ -704,15 +704,14 @@ main(int argc, char *argv[])
     {
       if (hextype && (hextype != HEX_POSTSCRIPT))
 	error_exit(-1, "sorry, cannot revert this type of hexdump");
-      return huntype(fp, fpo, cols, hextype,
-		negseek ? -seekoff : seekoff);
+      return huntype(fp, fpo, cols, hextype, seekoff);
     }
 
   if (seekoff || negseek || !relseek)
     {
 #ifdef TRY_SEEK
       c = relseek ? SEEK_CUR : (negseek ? SEEK_END : SEEK_SET);
-      e = fseek(fp, negseek ? -seekoff : seekoff, c);
+      e = fseek(fp, seekoff, c);
       if (e < 0 && negseek)
 	error_exit(4, "sorry cannot seek.");
       if (e >= 0)
@@ -720,6 +719,8 @@ main(int argc, char *argv[])
       else
 #endif
 	{
+	  if (seekoff < 0)
+	    error_exit(4, "sorry cannot seek.");
 	  long s = seekoff;
 
 	  while (s--)
