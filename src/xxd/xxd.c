@@ -180,6 +180,9 @@ char osver[] = "";
 # define STRNCMP(s1, s2, l) strncmp(s1, s2, l)
 #endif
 
+/* check if first bytes of s1 equal to s2 */
+# define START_WITH(s1, s2) !STRNCMP(s1, s2, sizeof(s2)-1)
+
 #ifndef __P
 # if defined(__STDC__) || defined(WIN32)
 #  define __P(a) a
@@ -512,28 +515,28 @@ main(int argc, char *argv[])
 
   while (argc >= 2)
     {
-      // if argument argv[1] starts with "--", then skip the first "-" 
-      pp = argv[1] + (!STRNCMP(argv[1], "--", 2) && argv[1][2]);
-	   if (!STRNCMP(pp, "-a", 2)) autoskip = 1 - autoskip;
-      else if (!STRNCMP(pp, "-b", 2)) hextype = HEX_BITS;
-      else if (!STRNCMP(pp, "-e", 2)) hextype = HEX_LITTLEENDIAN;
-      else if (!STRNCMP(pp, "-u", 2)) hexx = hexxa + 16;
-      else if (!STRNCMP(pp, "-p", 2)) hextype = HEX_POSTSCRIPT;
-      else if (!STRNCMP(pp, "-i", 2)) hextype = HEX_CINCLUDE;
-      else if (!STRNCMP(pp, "-C", 2)) capitalize = 1;
-      else if (!STRNCMP(pp, "-d", 2)) decimal_offset = 1;
-      else if (!STRNCMP(pp, "-r", 2)) revert++;
-      else if (!STRNCMP(pp, "-E", 2)) ebcdic++;
-      else if (!STRNCMP(pp, "-v", 2))
+      // if the option in argv[1] starts with "--", then skip the first "-" 
+      pp = argv[1] + (START_WITH(argv[1], "--") && argv[1][2]);
+	   if (START_WITH(pp, "-a")) autoskip = 1 - autoskip;
+      else if (START_WITH(pp, "-b")) hextype = HEX_BITS;
+      else if (START_WITH(pp, "-e")) hextype = HEX_LITTLEENDIAN;
+      else if (START_WITH(pp, "-u")) hexx = hexxa + 16;
+      else if (START_WITH(pp, "-p")) hextype = HEX_POSTSCRIPT;
+      else if (START_WITH(pp, "-i")) hextype = HEX_CINCLUDE;
+      else if (START_WITH(pp, "-C")) capitalize = 1;
+      else if (START_WITH(pp, "-d")) decimal_offset = 1;
+      else if (START_WITH(pp, "-r")) revert++;
+      else if (START_WITH(pp, "-E")) ebcdic++;
+      else if (START_WITH(pp, "-v"))
 	{
 	  fprintf(stderr, "%s%s\n", version, osver);
 	  exit(0);
 	}
-      else if (!STRNCMP(pp, "-c", 2))
+      else if (START_WITH(pp, "-c"))
 	{
-	  if (pp[2] && !STRNCMP("apitalize", pp + 2, 9))
+	  if (pp[2] && START_WITH(pp, "-capitalize"))
 	    capitalize = 1;
-	  else if (pp[2] && STRNCMP("ols", pp + 2, 3))
+	  else if (pp[2] && !START_WITH(pp, "-cols"))
 	    cols = (int)strtol(pp + 2, NULL, 0);
 	  else
 	    {
@@ -544,9 +547,9 @@ main(int argc, char *argv[])
 	      argc--;
 	    }
 	}
-      else if (!STRNCMP(pp, "-g", 2))
+      else if (START_WITH(pp, "-g"))
 	{
-	  if (pp[2] && STRNCMP("roup", pp + 2, 4))
+	  if (pp[2] && !START_WITH(pp, "-group"))
 	    octspergrp = (int)strtol(pp + 2, NULL, 0);
 	  else
 	    {
@@ -557,11 +560,11 @@ main(int argc, char *argv[])
 	      argc--;
 	    }
 	}
-      else if (!STRNCMP(pp, "-o", 2))
+      else if (START_WITH(pp, "-o"))
 	{
 	  int reloffset = 0;
 	  int negoffset = 0;
-	  if (pp[2] && STRNCMP("ffset", pp + 2, 5))
+	  if (pp[2] && !START_WITH(pp, "-offset"))
 	    displayoff = strtoul(pp + 2, NULL, 0);
 	  else
 	    {
@@ -582,11 +585,11 @@ main(int argc, char *argv[])
 	      argc--;
 	    }
 	}
-      else if (!STRNCMP(pp, "-s", 2))
+      else if (START_WITH(pp, "-s"))
 	{
 	  relseek = 0;
 	  negseek = 0;
-	  if (pp[2] && STRNCMP("kip", pp+2, 3) && STRNCMP("eek", pp+2, 3))
+	  if (pp[2] && !START_WITH(pp, "-skip") && !START_WITH(pp, "-seek"))
 	    {
 	    	pp += 2;
 	    }
@@ -606,9 +609,9 @@ main(int argc, char *argv[])
 #endif
 	      seekoff = strtol(pp + relseek, (char **)NULL, 0);
 	}
-      else if (!STRNCMP(pp, "-l", 2))
+      else if (START_WITH(pp, "-l"))
 	{
-	  if (pp[2] && STRNCMP("en", pp + 2, 2))
+	  if (pp[2] && !START_WITH(pp, "-len"))
 	    length = strtol(pp + 2, (char **)NULL, 0);
 	  else
 	    {
