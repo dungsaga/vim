@@ -287,6 +287,30 @@ fclose_or_die(FILE *fpi, FILE *fpo)
     perror_exit(2);
 }
 
+# define WITH_LEN(s) (s), sizeof(s)-1 /* used to put a string and its length in argument list of a function call */
+
+/*
+ * If (*ptr_argv)[1] match option1, then return option value at the end of option1
+ * If (*ptr_argv)[1] match option2, then return option value at (*ptr_argv)[2]
+ */
+  static char *
+match_option(char *option1, int len1, char *option2, int len2, int *ptr_argc, char ***ptr_argv) {
+  char *val = (*ptr_argv)[1];
+  if (STRNCMP(val, option1, len1))
+    return NULL; /* no match found */
+  if (val[len1] && STRNCMP(val, option2, len2))
+    return val + len1; /* option value at the end of option1 */
+  else
+    {
+      val = (*ptr_argv)[2];
+      if (!val)
+        exit_with_usage();
+      (*ptr_argv)++;
+      (*ptr_argc)--;
+      return val; /* option value at (*ptr_argv)[2] */
+    }
+}
+
 /*
  * If "c" is a hex digit, return the value.
  * Otherwise return -1.
@@ -491,7 +515,7 @@ main(int argc, char *argv[])
   long length = -1, n = 0, seekoff = 0;
   unsigned long displayoff = 0;
   static char l[LLEN+1];  /* static because it may be too big for stack */
-  char *pp;
+  char *pp, *val;
   int addrlen = 9;
 
 #ifdef AMIGA
@@ -524,6 +548,7 @@ main(int argc, char *argv[])
       else if (START_WITH(pp, "-p")) hextype = HEX_POSTSCRIPT;
       else if (START_WITH(pp, "-i")) hextype = HEX_CINCLUDE;
       else if (START_WITH(pp, "-C")) capitalize = 1;
+      else if (START_WITH(pp, "-capitalize")) capitalize = 1;
       else if (START_WITH(pp, "-d")) decimal_offset = 1;
       else if (START_WITH(pp, "-r")) revert++;
       else if (START_WITH(pp, "-E")) ebcdic++;
@@ -532,95 +557,42 @@ main(int argc, char *argv[])
 	  fprintf(stderr, "%s%s\n", version, osver);
 	  exit(0);
 	}
-      else if (START_WITH(pp, "-c"))
+      else if (val = match_option(WITH_LEN("-c"), WITH_LEN("-cols"), &argc, &argv))
 	{
-	  if (pp[2] && START_WITH(pp, "-capitalize"))
-	    capitalize = 1;
-	  else if (pp[2] && !START_WITH(pp, "-cols"))
-	    cols = (int)strtol(pp + 2, NULL, 0);
-	  else
-	    {
-	      if (!argv[2])
-		exit_with_usage();
-	      cols = (int)strtol(argv[2], NULL, 0);
-	      argv++;
-	      argc--;
-	    }
+	  cols = (int)strtol(val, NULL, 0);
 	}
-      else if (START_WITH(pp, "-g"))
+      else if (val = match_option(WITH_LEN("-g"), WITH_LEN("-group"), &argc, &argv))
 	{
-	  if (pp[2] && !START_WITH(pp, "-group"))
-	    octspergrp = (int)strtol(pp + 2, NULL, 0);
-	  else
-	    {
-	      if (!argv[2])
-		exit_with_usage();
-	      octspergrp = (int)strtol(argv[2], NULL, 0);
-	      argv++;
-	      argc--;
-	    }
+	  octspergrp = (int)strtol(val, NULL, 0);
 	}
-      else if (START_WITH(pp, "-o"))
+      else if (val = match_option(WITH_LEN("-o"), WITH_LEN("-offset"), &argc, &argv))
 	{
 	  int reloffset = 0;
 	  int negoffset = 0;
-	  if (pp[2] && !START_WITH(pp, "-offset"))
-	    displayoff = strtoul(pp + 2, NULL, 0);
+	  if (val[0] == '+')
+	    reloffset++;
+	  if (val[reloffset] == '-')
+	    negoffset++;
+	  if (negoffset)
+	    displayoff = ULONG_MAX - strtoul(val + reloffset+negoffset, NULL, 0) + 1;
 	  else
-	    {
-	      if (!argv[2])
-		exit_with_usage();
-
-	      if (argv[2][0] == '+')
-	       reloffset++;
-	     if (argv[2][reloffset] == '-')
-	       negoffset++;
-
-	     if (negoffset)
-	       displayoff = ULONG_MAX - strtoul(argv[2] + reloffset+negoffset, NULL, 0) + 1;
-	     else
-	       displayoff = strtoul(argv[2] + reloffset+negoffset, NULL, 0);
-
-	      argv++;
-	      argc--;
-	    }
+	    displayoff = strtoul(val + reloffset+negoffset, NULL, 0);
 	}
-      else if (START_WITH(pp, "-s"))
+      else if (val = match_option(WITH_LEN("-s"), WITH_LEN("-seek"), &argc, &argv))
 	{
 	  relseek = 0;
 	  negseek = 0;
-	  if (pp[2] && !START_WITH(pp, "-skip") && !START_WITH(pp, "-seek"))
-	    {
-	    	pp += 2;
-	    }
-	  else
-	    {
-	    	pp = argv[2];
-	      if (!pp)
-		exit_with_usage();
-	      argv++;
-	      argc--;
-	    }
 #ifdef TRY_SEEK
-	      if (pp[0] == '+')
+	      if (val[0] == '+')
 		relseek++;
-	      if (pp[relseek] == '-')
+	      if (val[relseek] == '-')
 		negseek++;
 #endif
-	      seekoff = strtol(pp + relseek, (char **)NULL, 0);
+	  seekoff = strtol(val + relseek, NULL, 0);
 	}
-      else if (START_WITH(pp, "-l"))
+      else if (val = match_option(WITH_LEN("-l"), WITH_LEN("--len"), &argc, &argv))
 	{
-	  if (pp[2] && !START_WITH(pp, "-len"))
-	    length = strtol(pp + 2, (char **)NULL, 0);
-	  else
-	    {
-	      if (!argv[2])
-		exit_with_usage();
-	      length = strtol(argv[2], (char **)NULL, 0);
-	      argv++;
-	      argc--;
-	    }
+	  length = strtol(val, NULL, 0);
 	}
       else if (!strcmp(pp, "--"))	/* end of options */
 	{
