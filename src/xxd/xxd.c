@@ -539,7 +539,7 @@ main(int argc, char *argv[])
 
   while (argc >= 2)
     {
-      // if the option in argv[1] starts with "--", then skip the first "-" 
+      /* if the option in argv[1] starts with "--", then skip the first "-" */
       pp = argv[1] + (START_WITH(argv[1], "--") && argv[1][2]);
 	   if (START_WITH(pp, "-a")) autoskip = 1 - autoskip;
       else if (START_WITH(pp, "-b")) hextype = HEX_BITS;
