@@ -290,24 +290,23 @@ fclose_or_die(FILE *fpi, FILE *fpo)
 # define WITH_LEN(s) (s), sizeof(s)-1 /* used to put a string and its length in argument list of a function call */
 
 /*
- * If (*ptr_argv)[1] match option1, then return option value at the end of option1
- * If (*ptr_argv)[1] match option2, then return option value at (*ptr_argv)[2]
+ * If (*ptr_argv)[0] match option1, then return option value at the end of option1
+ * If (*ptr_argv)[0] match option2, then return option value at (*ptr_argv)[1]
  */
   static char *
 match_option(char *option1, int len1, char *option2, int len2, int *ptr_argc, char ***ptr_argv) {
-  char *val = (*ptr_argv)[1];
+  char *val = (*ptr_argv)[0];
   if (STRNCMP(val, option1, len1))
     return NULL; /* no match found */
   if (val[len1] && STRNCMP(val, option2, len2))
     return val + len1; /* option value at the end of option1 */
   else
     {
-      val = (*ptr_argv)[2];
+      (*ptr_argc)--;
+      val = ++(*ptr_argv);
       if (!val)
         exit_with_usage();
-      (*ptr_argv)++;
-      (*ptr_argc)--;
-      return val; /* option value at (*ptr_argv)[2] */
+      return val; /* option value at (*ptr_argv)[1] */
     }
 }
 
@@ -539,8 +538,15 @@ main(int argc, char *argv[])
 
   while (argc >= 2)
     {
-      /* if the option in argv[1] starts with "--", then skip the first "-" */
-      pp = argv[1] + (START_WITH(argv[1], "--") && argv[1][2]);
+      argv++;				/* advance to next argument */
+      argc--;
+      pp = argv[0];
+      if (START_WITH(pp, "--"))
+        if (pp[2])
+          pp++; /* if this option starts with "--", then skip the first "-" */
+        else
+          break; /* "--"" means end of options */
+
 	   if (START_WITH(pp, "-a")) autoskip = 1 - autoskip;
       else if (START_WITH(pp, "-b")) hextype = HEX_BITS;
       else if (START_WITH(pp, "-e")) hextype = HEX_LITTLEENDIAN;
@@ -594,19 +600,11 @@ main(int argc, char *argv[])
 	{
 	  length = strtol(val, NULL, 0);
 	}
-      else if (!strcmp(pp, "--"))	/* end of options */
-	{
-	  argv++;
-	  argc--;
-	  break;
-	}
       else if (pp[0] == '-' && pp[1])	/* unknown option */
 	exit_with_usage();
       else
 	break;				/* not an option */
 
-      argv++;				/* advance to next argument */
-      argc--;
     }
 
   if (!cols)
@@ -643,33 +641,33 @@ main(int argc, char *argv[])
   else if (hextype == HEX_LITTLEENDIAN && (octspergrp & (octspergrp-1)))
     error_exit(1, "number of octets per group must be a power of 2 with -e.");
 
-  if (argc > 3)
+  if (argc > 2) /* only 2 arguments (input file, output file) are necessary */
     exit_with_usage();
 
-  if (argc == 1 || (argv[1][0] == '-' && !argv[1][1]))
+  if (argc == 0 || (argv[0][0] == '-' && !argv[0][1]))
     BIN_ASSIGN(fp = stdin, !revert);
   else
     {
-      if ((fp = fopen(argv[1], BIN_READ(!revert))) == NULL)
+      if ((fp = fopen(argv[0], BIN_READ(!revert))) == NULL)
 	{
 	  fprintf(stderr,"%s: ", pname);
-	  perror(argv[1]);
+	  perror(argv[0]);
 	  return 2;
 	}
     }
 
-  if (argc < 3 || (argv[2][0] == '-' && !argv[2][1]))
+  if (argc < 2 || (argv[1][0] == '-' && !argv[1][1]))
     BIN_ASSIGN(fpo = stdout, revert);
   else
     {
       int fd;
       int mode = revert ? O_WRONLY : (O_TRUNC|O_WRONLY);
 
-      if (((fd = OPEN(argv[2], mode | BIN_CREAT(revert), 0666)) < 0) ||
+      if (((fd = OPEN(argv[1], mode | BIN_CREAT(revert), 0666)) < 0) ||
 	  (fpo = fdopen(fd, BIN_WRITE(revert))) == NULL)
 	{
 	  fprintf(stderr, "%s: ", pname);
-	  perror(argv[2]);
+	  perror(argv[1]);
 	  return 3;
 	}
       rewind(fpo);
@@ -708,10 +706,10 @@ main(int argc, char *argv[])
     {
       if (fp != stdin)
 	{
-	  for (e = 0; (c = argv[1][e]) != 0; e++)
-	    argv[1][e] = !isalnum(c) ? '_' : (capitalize ? toupper((int)c) : c);
-	  pp = isdigit((int)argv[1][0]) ? "__" : "";
-	  FPRINTF_OR_DIE((fpo, "unsigned char %s%s[] = {\n", pp, argv[1]));
+	  for (e = 0; (c = argv[0][e]) != 0; e++)
+	    argv[0][e] = !isalnum(c) ? '_' : (capitalize ? toupper((int)c) : c);
+	  pp = isdigit((int)argv[0][0]) ? "__" : "";
+	  FPRINTF_OR_DIE((fpo, "unsigned char %s%s[] = {\n", pp, argv[0]));
 	}
 
       p = 0;
@@ -728,7 +726,7 @@ main(int argc, char *argv[])
       if (fp != stdin)
 	{
 	  FPRINTF_OR_DIE((fpo, "};\nunsigned int %s%s_%s = %d;\n",
-		pp, argv[1], capitalize ? "LEN" : "len", p));
+		pp, argv[0], capitalize ? "LEN" : "len", p));
 	}
 
       fclose_or_die(fp, fpo);
