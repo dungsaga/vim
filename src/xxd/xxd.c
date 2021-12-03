@@ -290,22 +290,24 @@ fclose_or_die(FILE *fpi, FILE *fpo)
 # define WITH_LEN(s) (s), sizeof(s)-1 /* used to put a string and its length in argument list of a function call */
 
 /*
- * If pp match option1, then return option value at the end of option1
- * If pp match option2, then return option value at (*ptr_argv)[1]
+ * If pp match option1, then pp point to option value at the end of option1
+ * If pp match option2, then pp point to option value at next_arg
  */
-  static char *
-match_option(char *pp, char *option1, int len1, char *option2, int len2, int *ptr_argc, char ***ptr_argv) {
-  if (STRNCMP(pp, option1, len1))
-    return NULL; /* no match found */
-  if (pp[len1] && STRNCMP(pp, option2, len2))
-    return pp + len1; /* option value at the end of option1 */
+  static int
+match_option(char **pp, char *option1, int len1, char *option2, int len2, char *next_arg) {
+  if (STRNCMP((*pp), option1, len1))
+    return 0; /* no match found */
+  if ((*pp)[len1] && STRNCMP((*pp), option2, len2))
+    {
+      (*pp) += len1;
+      return -1; /* option value at the end of option1 */
+    }
   else
     {
-      (*ptr_argc)--;
-      char *val = (++(*ptr_argv))[0];
-      if (!val)
+      if (!next_arg)
         exit_with_usage();
-      return val; /* option value at (*ptr_argv)[1] */
+      (*pp) = next_arg;
+      return 1; /* option value at next_arg */
     }
 }
 
@@ -504,7 +506,7 @@ static unsigned char etoa64[] =
 main(int argc, char *argv[])
 {
   FILE *fp, *fpo;
-  int c, e, p = 0, relseek = 1, negseek = 0, revert = 0;
+  int c, e = 0, p = 0, relseek = 1, negseek = 0, revert = 0;
   int cols = 0, nonzero = 0, autoskip = 0, hextype = HEX_NORMAL;
   int capitalize = 0, decimal_offset = 0;
   int ebcdic = 0;
@@ -513,7 +515,7 @@ main(int argc, char *argv[])
   long length = -1, n = 0, seekoff = 0;
   unsigned long displayoff = 0;
   static char l[LLEN+1];  /* static because it may be too big for stack */
-  char *pp, *val;
+  char *pp, *next_arg;
   int addrlen = 9;
 
 #ifdef AMIGA
@@ -522,7 +524,7 @@ main(int argc, char *argv[])
     exit(1);
 #endif
 
-  pname = argv[0];
+  pname = argv[0]; /* program name */
   for (pp = pname; *pp; )
     if (*pp++ == PATH_SEP)
       pname = pp;
@@ -535,16 +537,16 @@ main(int argc, char *argv[])
       }
 #endif
 
-  while (argc >= 2)
+  c = 1;			/* current argument index in argv */
+  while (argc > c)
     {
-      argv++;				/* advance to next argument */
-      argc--;
-      pp = argv[0];
+      pp = argv[c++];
+      next_arg = argc > c ? argv[c] : NULL;
       if (START_WITH(pp, "--"))
-        if (pp[2])
-          pp++; /* if this option starts with "--", then skip the first "-" */
-        else
-          break; /* "--"" means end of options */
+        if (pp[2]) /* if this option starts with "--", then skip the first "-" */
+          pp++;
+        else /* "--" marks the end of options */
+          break;
 
 	   if (START_WITH(pp, "-a")) autoskip = 1 - autoskip;
       else if (START_WITH(pp, "-b")) hextype = HEX_BITS;
@@ -562,48 +564,55 @@ main(int argc, char *argv[])
 	  fprintf(stderr, "%s%s\n", version, osver);
 	  exit(0);
 	}
-      else if (val = match_option(pp, WITH_LEN("-c"), WITH_LEN("-cols"), &argc, &argv))
+      else if (e = match_option(&pp, WITH_LEN("-c"), WITH_LEN("-cols"), next_arg))
 	{
-	  cols = (int)strtol(val, NULL, 0);
+	  cols = (int)strtol(pp, NULL, 0);
 	}
-      else if (val = match_option(pp, WITH_LEN("-g"), WITH_LEN("-group"), &argc, &argv))
+      else if (e = match_option(&pp, WITH_LEN("-g"), WITH_LEN("-group"), next_arg))
 	{
-	  octspergrp = (int)strtol(val, NULL, 0);
+	  octspergrp = (int)strtol(pp, NULL, 0);
 	}
-      else if (val = match_option(pp, WITH_LEN("-o"), WITH_LEN("-offset"), &argc, &argv))
+      else if (e = match_option(&pp, WITH_LEN("-o"), WITH_LEN("-offset"), next_arg))
 	{
 	  int reloffset = 0;
 	  int negoffset = 0;
-	  if (val[0] == '+')
+	  if (pp[0] == '+')
 	    reloffset++;
-	  if (val[reloffset] == '-')
+	  if (pp[reloffset] == '-')
 	    negoffset++;
 	  if (negoffset)
-	    displayoff = ULONG_MAX - strtoul(val + reloffset+negoffset, NULL, 0) + 1;
+	    displayoff = ULONG_MAX - strtoul(pp + reloffset+negoffset, NULL, 0) + 1;
 	  else
-	    displayoff = strtoul(val + reloffset+negoffset, NULL, 0);
+	    displayoff = strtoul(pp + reloffset+negoffset, NULL, 0);
 	}
-      else if (val = match_option(pp, WITH_LEN("-s"), WITH_LEN("-seek"), &argc, &argv))
+      else if (e = match_option(&pp, WITH_LEN("-s"), WITH_LEN("-seek"), next_arg))
 	{
 	  relseek = 0;
 	  negseek = 0;
 #ifdef TRY_SEEK
-	      if (val[0] == '+')
+	      if (pp[0] == '+')
 		relseek++;
-	      if (val[relseek] == '-')
+	      if (pp[relseek] == '-')
 		negseek++;
 #endif
-	  seekoff = strtol(val + relseek, NULL, 0);
+	  seekoff = strtol(pp + relseek, NULL, 0);
 	}
-      else if (val = match_option(pp, WITH_LEN("-l"), WITH_LEN("--len"), &argc, &argv))
+      else if (e = match_option(&pp, WITH_LEN("-l"), WITH_LEN("--len"), next_arg))
 	{
-	  length = strtol(val, NULL, 0);
+	  length = strtol(pp, NULL, 0);
 	}
       else if (pp[0] == '-' && pp[1])	/* unknown option */
 	exit_with_usage();
       else
-	break;				/* not an option */
-
+        {
+          c--;
+          break;			/* not an option */
+        }
+      if (e > 0)		/* pp point to next_arg */
+        {
+          e = 0;
+          c++;			/* advance to next argument */
+        }
     }
 
   if (!cols)
@@ -640,7 +649,9 @@ main(int argc, char *argv[])
   else if (hextype == HEX_LITTLEENDIAN && (octspergrp & (octspergrp-1)))
     error_exit(1, "number of octets per group must be a power of 2 with -e.");
 
-  if (argc > 2) /* only 2 arguments (input file, output file) are necessary */
+  argv = &argv[c];
+  argc -= c;
+  if (argc > 2) /* allow max 2 remaining arguments (input file, output file) */
     exit_with_usage();
 
   if (argc == 0 || (argv[0][0] == '-' && !argv[0][1]))
