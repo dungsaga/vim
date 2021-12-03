@@ -290,20 +290,19 @@ fclose_or_die(FILE *fpi, FILE *fpo)
 # define WITH_LEN(s) (s), sizeof(s)-1 /* used to put a string and its length in argument list of a function call */
 
 /*
- * If (*ptr_argv)[0] match option1, then return option value at the end of option1
- * If (*ptr_argv)[0] match option2, then return option value at (*ptr_argv)[1]
+ * If pp match option1, then return option value at the end of option1
+ * If pp match option2, then return option value at (*ptr_argv)[1]
  */
   static char *
-match_option(char *option1, int len1, char *option2, int len2, int *ptr_argc, char ***ptr_argv) {
-  char *val = (*ptr_argv)[0];
-  if (STRNCMP(val, option1, len1))
+match_option(char *pp, char *option1, int len1, char *option2, int len2, int *ptr_argc, char ***ptr_argv) {
+  if (STRNCMP(pp, option1, len1))
     return NULL; /* no match found */
-  if (val[len1] && STRNCMP(val, option2, len2))
-    return val + len1; /* option value at the end of option1 */
+  if (pp[len1] && STRNCMP(pp, option2, len2))
+    return pp + len1; /* option value at the end of option1 */
   else
     {
       (*ptr_argc)--;
-      val = ++(*ptr_argv);
+      char *val = (++(*ptr_argv))[0];
       if (!val)
         exit_with_usage();
       return val; /* option value at (*ptr_argv)[1] */
@@ -563,15 +562,15 @@ main(int argc, char *argv[])
 	  fprintf(stderr, "%s%s\n", version, osver);
 	  exit(0);
 	}
-      else if (val = match_option(WITH_LEN("-c"), WITH_LEN("-cols"), &argc, &argv))
+      else if (val = match_option(pp, WITH_LEN("-c"), WITH_LEN("-cols"), &argc, &argv))
 	{
 	  cols = (int)strtol(val, NULL, 0);
 	}
-      else if (val = match_option(WITH_LEN("-g"), WITH_LEN("-group"), &argc, &argv))
+      else if (val = match_option(pp, WITH_LEN("-g"), WITH_LEN("-group"), &argc, &argv))
 	{
 	  octspergrp = (int)strtol(val, NULL, 0);
 	}
-      else if (val = match_option(WITH_LEN("-o"), WITH_LEN("-offset"), &argc, &argv))
+      else if (val = match_option(pp, WITH_LEN("-o"), WITH_LEN("-offset"), &argc, &argv))
 	{
 	  int reloffset = 0;
 	  int negoffset = 0;
@@ -584,7 +583,7 @@ main(int argc, char *argv[])
 	  else
 	    displayoff = strtoul(val + reloffset+negoffset, NULL, 0);
 	}
-      else if (val = match_option(WITH_LEN("-s"), WITH_LEN("-seek"), &argc, &argv))
+      else if (val = match_option(pp, WITH_LEN("-s"), WITH_LEN("-seek"), &argc, &argv))
 	{
 	  relseek = 0;
 	  negseek = 0;
@@ -596,7 +595,7 @@ main(int argc, char *argv[])
 #endif
 	  seekoff = strtol(val + relseek, NULL, 0);
 	}
-      else if (val = match_option(WITH_LEN("-l"), WITH_LEN("--len"), &argc, &argv))
+      else if (val = match_option(pp, WITH_LEN("-l"), WITH_LEN("--len"), &argc, &argv))
 	{
 	  length = strtol(val, NULL, 0);
 	}
