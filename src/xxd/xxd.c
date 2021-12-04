@@ -298,17 +298,14 @@ match_option(char **pp, char *option1, int len1, char *option2, int len2, char *
   if (STRNCMP((*pp), option1, len1))
     return 0; /* no match found */
   if ((*pp)[len1] && STRNCMP((*pp), option2, len2))
-    {
-      (*pp) += len1;
-      return -1; /* option value at the end of option1 */
-    }
+    (*pp) += len1; /* option value at the end of option1 */
   else
     {
       if (!next_arg)
         exit_with_usage();
-      (*pp) = next_arg;
-      return 1; /* option value at next_arg */
+      (*pp) = next_arg; /* option value at next_arg */
     }
+    return 1;
 }
 
 /*
@@ -506,7 +503,7 @@ static unsigned char etoa64[] =
 main(int argc, char *argv[])
 {
   FILE *fp, *fpo;
-  int c, e = 0, p = 0, relseek = 1, negseek = 0, revert = 0;
+  int c, e, p = 0, relseek = 1, negseek = 0, revert = 0;
   int cols = 0, nonzero = 0, autoskip = 0, hextype = HEX_NORMAL;
   int capitalize = 0, decimal_offset = 0;
   int ebcdic = 0;
@@ -564,15 +561,15 @@ main(int argc, char *argv[])
 	  fprintf(stderr, "%s%s\n", version, osver);
 	  exit(0);
 	}
-      else if (e = match_option(&pp, WITH_LEN("-c"), WITH_LEN("-cols"), next_arg))
+      else if (match_option(&pp, WITH_LEN("-c"), WITH_LEN("-cols"), next_arg))
 	{
 	  cols = (int)strtol(pp, NULL, 0);
 	}
-      else if (e = match_option(&pp, WITH_LEN("-g"), WITH_LEN("-group"), next_arg))
+      else if (match_option(&pp, WITH_LEN("-g"), WITH_LEN("-group"), next_arg))
 	{
 	  octspergrp = (int)strtol(pp, NULL, 0);
 	}
-      else if (e = match_option(&pp, WITH_LEN("-o"), WITH_LEN("-offset"), next_arg))
+      else if (match_option(&pp, WITH_LEN("-o"), WITH_LEN("-offset"), next_arg))
 	{
 	  int reloffset = 0;
 	  int negoffset = 0;
@@ -585,7 +582,7 @@ main(int argc, char *argv[])
 	  else
 	    displayoff = strtoul(pp + reloffset+negoffset, NULL, 0);
 	}
-      else if (e = match_option(&pp, WITH_LEN("-s"), WITH_LEN("-seek"), next_arg))
+      else if (match_option(&pp, WITH_LEN("-s"), WITH_LEN("-seek"), next_arg))
 	{
 	  relseek = 0;
 	  negseek = 0;
@@ -597,7 +594,7 @@ main(int argc, char *argv[])
 #endif
 	  seekoff = strtol(pp + relseek, NULL, 0);
 	}
-      else if (e = match_option(&pp, WITH_LEN("-l"), WITH_LEN("--len"), next_arg))
+      else if (match_option(&pp, WITH_LEN("-l"), WITH_LEN("--len"), next_arg))
 	{
 	  length = strtol(pp, NULL, 0);
 	}
@@ -608,11 +605,8 @@ main(int argc, char *argv[])
           c--;
           break;			/* not an option */
         }
-      if (e > 0)		/* pp point to next_arg */
-        {
-          e = 0;
-          c++;			/* advance to next argument */
-        }
+      if (pp == next_arg)		/* pp point to next_arg */
+        c++;			/* advance to next argument */
     }
 
   if (!cols)
