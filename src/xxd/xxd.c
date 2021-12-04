@@ -510,7 +510,7 @@ main(int argc, char *argv[])
   int octspergrp = -1;	/* number of octets grouped in output */
   int grplen;		/* total chars per octet group */
   long length = -1, n = 0, seekoff = 0;
-  unsigned long displayoff = 0;
+  long displayoff = 0;
   static char l[LLEN+1];  /* static because it may be too big for stack */
   char *pp, *next_arg;
   int addrlen = 9;
@@ -572,15 +572,9 @@ main(int argc, char *argv[])
       else if (match_option(&pp, WITH_LEN("-o"), WITH_LEN("-offset"), next_arg))
 	{
 	  int reloffset = 0;
-	  int negoffset = 0;
 	  if (pp[0] == '+')
 	    reloffset++;
-	  if (pp[reloffset] == '-')
-	    negoffset++;
-	  if (negoffset)
-	    displayoff = ULONG_MAX - strtoul(pp + reloffset+negoffset, NULL, 0) + 1;
-	  else
-	    displayoff = strtoul(pp + reloffset+negoffset, NULL, 0);
+	  displayoff = strtol(pp + reloffset, NULL, 0);
 	}
       else if (match_option(&pp, WITH_LEN("-s"), WITH_LEN("-seek"), next_arg))
 	{
