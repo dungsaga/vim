@@ -294,7 +294,7 @@ fclose_or_die(FILE *fpi, FILE *fpo)
  * If pp match option2, then pp point to option value at next_arg
  */
   static int
-match_option(char **pp, char *option1, int len1, char *option2, int len2, char *next_arg) {
+get_option_value(char **pp, char *option1, int len1, char *option2, int len2, char *next_arg) {
   if (STRNCMP((*pp), option1, len1))
     return 0; /* no match found */
   if ((*pp)[len1] && STRNCMP((*pp), option2, len2))
@@ -561,19 +561,19 @@ main(int argc, char *argv[])
 	  fprintf(stderr, "%s%s\n", version, osver);
 	  exit(0);
 	}
-      else if (match_option(&pp, WITH_LEN("-c"), WITH_LEN("-cols"), next_arg))
+      else if (get_option_value(&pp, WITH_LEN("-c"), WITH_LEN("-cols"), next_arg))
 	{
 	  cols = (int)strtol(pp, NULL, 0);
 	}
-      else if (match_option(&pp, WITH_LEN("-g"), WITH_LEN("-group"), next_arg))
+      else if (get_option_value(&pp, WITH_LEN("-g"), WITH_LEN("-group"), next_arg))
 	{
 	  octspergrp = (int)strtol(pp, NULL, 0);
 	}
-      else if (match_option(&pp, WITH_LEN("-o"), WITH_LEN("-offset"), next_arg))
+      else if (get_option_value(&pp, WITH_LEN("-o"), WITH_LEN("-offset"), next_arg))
 	{
 	  displayoff = strtol(pp, NULL, 0);
 	}
-      else if (match_option(&pp, WITH_LEN("-s"), WITH_LEN("-seek"), next_arg))
+      else if (get_option_value(&pp, WITH_LEN("-s"), WITH_LEN("-seek"), next_arg))
 	{
 	  relseek = 0;
 	  negseek = 0;
@@ -585,7 +585,7 @@ main(int argc, char *argv[])
 #endif
 	  seekoff = strtol(pp + relseek, NULL, 0);
 	}
-      else if (match_option(&pp, WITH_LEN("-l"), WITH_LEN("--len"), next_arg))
+      else if (get_option_value(&pp, WITH_LEN("-l"), WITH_LEN("--len"), next_arg))
 	{
 	  length = strtol(pp, NULL, 0);
 	}
