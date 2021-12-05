@@ -287,7 +287,7 @@ fclose_or_die(FILE *fpi, FILE *fpo)
     perror_exit(2);
 }
 
-# define WITH_LEN(s) (s), sizeof(s)-1 /* used to put a string and its length in argument list of a function call */
+# define GET_OPTION_VALUE(pp, option1, option2, next_arg) get_option_value(pp, option1, sizeof(option1)-1, option2, sizeof(option2)-1, next_arg)
 
 /*
  * If pp match option1, then pp point to option value at the end of option1
@@ -561,19 +561,19 @@ main(int argc, char *argv[])
 	  fprintf(stderr, "%s%s\n", version, osver);
 	  exit(0);
 	}
-      else if (get_option_value(&pp, WITH_LEN("-c"), WITH_LEN("-cols"), next_arg))
+      else if (GET_OPTION_VALUE(&pp, "-c", "-cols", next_arg))
 	{
 	  cols = (int)strtol(pp, NULL, 0);
 	}
-      else if (get_option_value(&pp, WITH_LEN("-g"), WITH_LEN("-group"), next_arg))
+      else if (GET_OPTION_VALUE(&pp, "-g", "-group", next_arg))
 	{
 	  octspergrp = (int)strtol(pp, NULL, 0);
 	}
-      else if (get_option_value(&pp, WITH_LEN("-o"), WITH_LEN("-offset"), next_arg))
+      else if (GET_OPTION_VALUE(&pp, "-o", "-offset", next_arg))
 	{
 	  displayoff = strtol(pp, NULL, 0);
 	}
-      else if (get_option_value(&pp, WITH_LEN("-s"), WITH_LEN("-seek"), next_arg))
+      else if (GET_OPTION_VALUE(&pp, "-s", "-seek", next_arg))
 	{
 	  relseek = 0;
 	  negseek = 0;
@@ -585,7 +585,7 @@ main(int argc, char *argv[])
 #endif
 	  seekoff = strtol(pp + relseek, NULL, 0);
 	}
-      else if (get_option_value(&pp, WITH_LEN("-l"), WITH_LEN("--len"), next_arg))
+      else if (GET_OPTION_VALUE(&pp, "-l", "--len", next_arg))
 	{
 	  length = strtol(pp, NULL, 0);
 	}
