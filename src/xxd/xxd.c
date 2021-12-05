@@ -571,10 +571,7 @@ main(int argc, char *argv[])
 	}
       else if (match_option(&pp, WITH_LEN("-o"), WITH_LEN("-offset"), next_arg))
 	{
-	  int reloffset = 0;
-	  if (pp[0] == '+')
-	    reloffset++;
-	  displayoff = strtol(pp + reloffset, NULL, 0);
+	  displayoff = strtol(pp, NULL, 0);
 	}
       else if (match_option(&pp, WITH_LEN("-s"), WITH_LEN("-seek"), next_arg))
 	{
